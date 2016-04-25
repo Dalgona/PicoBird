@@ -17,6 +17,7 @@ Simple Twitter library for .NET
   using System.Collections.Specialized;
   using System.Net.Http;
   
+  // PicoBird.API.Get() method returns raw HttpResponseMessage objects.
   HttpResponseMessage res = await api.Get(
       "/statuses/home_timeline.json",
       new NameValueCollection
@@ -25,6 +26,19 @@ Simple Twitter library for .NET
       });
   ```
   
+* Using Twitter object wrapper classes (defined in `PicoBird.Objects` namespace)
+
+  ```cs
+  using PicoBird.Objects;
+  
+  User user = await api.Get<User>("/account/verify_credentials.json");
+  Console.WriteLine($"Name: {user.name}");
+  
+  Tweet[] home = await api.Get<Tweet[]>("statuses/home_timeline.json");
+  foreach (Tweet status in home)
+      Console.WriteLine($"@{status.user.screen_name}: {status.text}");
+  ```
+
 ## Todo
 
 * request_token
