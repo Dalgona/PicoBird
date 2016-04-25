@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace PicoBird
 {
@@ -29,15 +30,15 @@ namespace PicoBird
         }
 
         // Send OAuth signed requests.
-        private Task<HttpResponseMessage> SendRequest(
+        private async Task<HttpResponseMessage> SendRequest(
             HttpMethod method,
             string resource,
-            NameValueCollection query,
+            NameValueCollection query = null,
             NameValueCollection data = null)
         {
             string baseUrl = APIROOT + resource;    // api url without query string
             string requestUrl = baseUrl;    // api url with query string (if any)
-            string queryString = PercentEncode(query);
+            string queryString = query != null ? PercentEncode(query) : "";
             if (!queryString.Equals("")) requestUrl += "?" + queryString;
 
             NameValueCollection parameters = new NameValueCollection
@@ -50,7 +51,7 @@ namespace PicoBird
                 { "oauth_version", "1.0" }
             };
             NameValueCollection headerParams = new NameValueCollection(parameters);
-            parameters.Add(query);
+            if (query != null) parameters.Add(query);
             if (method == HttpMethod.Post) parameters.Add(data);
             string paramString = PercentEncode(parameters);
 
@@ -75,19 +76,37 @@ namespace PicoBird
                 request.Content = new FormUrlEncodedContent(
                     from k in data.AllKeys from v in data.GetValues(k) select new KeyValuePair<string, string>(k, v));
 
-            return client.SendAsync(request);
+            HttpResponseMessage res = await client.SendAsync(request);
+
+            if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                throw new APIException(res);
+
+            return res;
         }
 
-        public Task<HttpResponseMessage> Get(
+        public async Task<HttpResponseMessage> Get(
             string resource,
-            NameValueCollection query)
-            => SendRequest(HttpMethod.Get, resource, query);
+            NameValueCollection query = null)
+            => await SendRequest(HttpMethod.Get, resource, query);
 
-        public Task<HttpResponseMessage> Post(
+        public async Task<T> Get<T>(
             string resource,
-            NameValueCollection query,
-            NameValueCollection data)
-            => SendRequest(HttpMethod.Post, resource, query, data);
+            NameValueCollection query = null) where T : Objects.ITwitterObject
+            => JsonConvert.DeserializeObject<T>(
+                await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync());
+
+        public async Task<HttpResponseMessage> Post(
+            string resource,
+            NameValueCollection query = null,
+            NameValueCollection data = null)
+            => await SendRequest(HttpMethod.Post, resource, query, data);
+
+        public async Task<T> Post<T>(
+            string resource,
+            NameValueCollection query = null,
+            NameValueCollection data = null) where T : Objects.ITwitterObject
+            => JsonConvert.DeserializeObject<T>(
+                await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync());
 
         private static string PercentEncode(NameValueCollection nvc)
         {
