@@ -116,6 +116,27 @@ namespace PicoBird
             => JsonConvert.DeserializeObject<T>(
                 await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync());
 
+        public async Task RequestToken(Func<string, string> callback)
+        {
+            var res = await Post("/oauth/request_token");
+            var tokens = from i in (await res.Content.ReadAsStringAsync()).Split('&')
+                         select i.Split('=');
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            foreach (var i in tokens) dict.Add(i[0], i[1]);
+            Token = dict["oauth_token"];
+            TokenSecret = dict["oauth_token_secret"];
+
+            var pin = callback(APIROOT + $"/oauth/authenticate?oauth_token={Token}");
+
+            res = await Post("/oauth/access_token", null, new NameValueCollection { { "oauth_verifier", pin } });
+            tokens = from i in (await res.Content.ReadAsStringAsync()).Split('&')
+                        select i.Split('=');
+            dict = new Dictionary<string, string>();
+            foreach (var i in tokens) dict.Add(i[0], i[1]);
+            Token = dict["oauth_token"];
+            TokenSecret = dict["oauth_token_secret"];
+        }
+
         private static string PercentEncode(NameValueCollection nvc)
         {
             var values = (from k in nvc.AllKeys orderby k ascending

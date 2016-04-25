@@ -7,8 +7,25 @@ Simple Twitter library for .NET
 
   ```cs
   PicoBird.API api = new PicoBird.API("<CONSUMER_KEY>", "<CONSUMER_SECRET>");
+
+  // Assign OAuth token and token secret if you already have ones.
   api.Token = "<OAUTH_TOKEN>";
   api.TokenSecret = "<OAUTH_TOKEN_SECRET>";
+
+  // Or call RequestToken to fetch them from Twitter API server.
+  // Note that RequestToken method requires a callback function
+  // which takes one string argument, which is the URL to the
+  // authentication page.
+  api.OAuthCallback = "oob";
+  await api.RequestToken((string url) =>
+  {
+      System.Diagnostics.Process.Start(url);
+      Console.Write("Input PIN> ");
+      return Console.ReadLine();
+  });
+
+  // On succeess, api.Token and api.TokenSecret should be populated
+  // with appropriate values at this point.
   ```
 
 * Access Twitter API Resources
@@ -41,7 +58,6 @@ Simple Twitter library for .NET
 
 ## Todo
 
-* request_token
 * Add basic wrappers
 
 ## License

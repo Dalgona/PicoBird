@@ -8,6 +8,7 @@ namespace PicoBird
     public class APIException : Exception
     {
         public Objects.Errors Info { get; private set; }
+        public HttpResponseMessage Response { get; private set; }
 
         public APIException(HttpResponseMessage res) : base("Twitter API Server returned an error.")
         {
@@ -16,7 +17,18 @@ namespace PicoBird
 
         private async Task InitException(HttpResponseMessage res)
         {
-            Info = JsonConvert.DeserializeObject<Objects.Errors>(await res.Content.ReadAsStringAsync());
+            try
+            {
+                Info = JsonConvert.DeserializeObject<Objects.Errors>(await res.Content.ReadAsStringAsync());
+            }
+            catch (Exception)
+            {
+                Info = null;
+            }
+            finally
+            {
+                Response = res;
+            }
         }
     }
 }
