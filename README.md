@@ -62,7 +62,7 @@ Simple Twitter library for .NET
 
 ## License
 
-*TBD*
+MIT License. See `LICENSE.md` for the full text.
 
 ## Credits
 
