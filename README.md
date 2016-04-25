@@ -19,7 +19,7 @@ Simple Twitter library for .NET
   
   // PicoBird.API.Get() method returns raw HttpResponseMessage objects.
   HttpResponseMessage res = await api.Get(
-      "/statuses/home_timeline.json",
+      "/1.1/statuses/home_timeline.json",
       new NameValueCollection
       {
           { "include_entities", "true" }
@@ -31,10 +31,10 @@ Simple Twitter library for .NET
   ```cs
   using PicoBird.Objects;
   
-  User user = await api.Get<User>("/account/verify_credentials.json");
+  User user = await api.Get<User>("/1.1/account/verify_credentials.json");
   Console.WriteLine($"Name: {user.name}");
   
-  Tweet[] home = await api.Get<Tweet[]>("statuses/home_timeline.json");
+  Tweet[] home = await api.Get<Tweet[]>("/1.1/statuses/home_timeline.json");
   foreach (Tweet status in home)
       Console.WriteLine($"@{status.user.screen_name}: {status.text}");
   ```

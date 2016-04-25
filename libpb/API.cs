@@ -13,13 +13,14 @@ namespace PicoBird
 {
     public class API
     {
-        private static readonly string APIROOT = "https://api.twitter.com/1.1";
+        private static readonly string APIROOT = "https://api.twitter.com";
 
         private HttpClient client;
         public string ConsumerKey { get; private set; }
         public string ConsumerSecret { get; private set; }
         public string Token { get; set; }
         public string TokenSecret { get; set; }
+        public string OAuthCallback { get; set; }
 
         // Constructor
         public API(string consumerKey, string consumerSecret)
@@ -27,6 +28,9 @@ namespace PicoBird
             client = new HttpClient();
             ConsumerKey = consumerKey;
             ConsumerSecret = consumerSecret;
+            Token = "";
+            TokenSecret = "";
+            OAuthCallback = "";
         }
 
         // Send OAuth signed requests.
@@ -47,12 +51,16 @@ namespace PicoBird
                 { "oauth_nonce", GenerateNonce() },
                 { "oauth_signature_method", "HMAC-SHA1" },
                 { "oauth_timestamp", GenerateTimestamp() },
-                { "oauth_token", Token },
                 { "oauth_version", "1.0" }
             };
+            if (!Token.Equals(""))
+                parameters.Add("oauth_token", Token);
+            else if (baseUrl.Contains("request_token"))
+                parameters.Add("oauth_callback", OAuthCallback);
+
             NameValueCollection headerParams = new NameValueCollection(parameters);
             if (query != null) parameters.Add(query);
-            if (method == HttpMethod.Post) parameters.Add(data);
+            if (method == HttpMethod.Post && data != null) parameters.Add(data);
             string paramString = PercentEncode(parameters);
 
             string signBase = method.ToString();
@@ -72,7 +80,7 @@ namespace PicoBird
 
             HttpRequestMessage request = new HttpRequestMessage(method, requestUrl);
             request.Headers.Add("Authorization", headerString);
-            if (method == HttpMethod.Post)
+            if (method == HttpMethod.Post && data != null)
                 request.Content = new FormUrlEncodedContent(
                     from k in data.AllKeys from v in data.GetValues(k) select new KeyValuePair<string, string>(k, v));
 
