@@ -48,6 +48,10 @@ Simple Twitter library for .NET
 
 *TBD*
 
+## Credits
+
+This project uses Newtonsoft's [Json.NET](http://www.newtonsoft.com/json) ([MIT License](https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md))
+
 ## Copyright
 
 Copyright &copy; 2016, Dalgona. <dalgona@hontou.moe>
