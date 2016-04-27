@@ -56,6 +56,21 @@ Simple Twitter library for .NET
       Console.WriteLine($"@{status.user.screen_name}: {status.text}");
   ```
 
+* PicoBird now supports `userstream`.
+
+  *WARNING: PicoBird's streaming support is experimental and it does not provide all the functionality listed in the official specification. And the behaviors are subject to change at any time. Use with caution.*
+
+  ```cs
+  api.Streaming.UserStream(status =>
+  {
+      // `status` is a `PicoBird.Objects.Tweet` object.
+      Console.WriteLine(status.text);
+      
+      // For right now, do not delete the parameter below,
+      // or streaming won't work.
+  }, new NameValueCollection { { "delimited", "length" } });
+  ```
+
 ## Todo
 
 * Add basic wrappers

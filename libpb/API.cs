@@ -8,6 +8,9 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using System.IO;
+using System.Net;
+using PicoBird.Objects;
 
 namespace PicoBird
 {
@@ -21,6 +24,7 @@ namespace PicoBird
         public string Token { get; set; }
         public string TokenSecret { get; set; }
         public string OAuthCallback { get; set; }
+        public _Streaming Streaming { get; private set; }
 
         // Constructor
         public API(string consumerKey, string consumerSecret)
@@ -31,6 +35,7 @@ namespace PicoBird
             Token = "";
             TokenSecret = "";
             OAuthCallback = "";
+            Streaming = new _Streaming(this);
         }
 
         // Send OAuth signed requests.
@@ -45,38 +50,7 @@ namespace PicoBird
             string queryString = query != null ? PercentEncode(query) : "";
             if (!queryString.Equals("")) requestUrl += "?" + queryString;
 
-            NameValueCollection parameters = new NameValueCollection
-            {
-                { "oauth_consumer_key", ConsumerKey },
-                { "oauth_nonce", GenerateNonce() },
-                { "oauth_signature_method", "HMAC-SHA1" },
-                { "oauth_timestamp", GenerateTimestamp() },
-                { "oauth_version", "1.0" }
-            };
-            if (!Token.Equals(""))
-                parameters.Add("oauth_token", Token);
-            else if (baseUrl.Contains("request_token"))
-                parameters.Add("oauth_callback", OAuthCallback);
-
-            NameValueCollection headerParams = new NameValueCollection(parameters);
-            if (query != null) parameters.Add(query);
-            if (method == HttpMethod.Post && data != null) parameters.Add(data);
-            string paramString = PercentEncode(parameters);
-
-            string signBase = method.ToString();
-            signBase += "&" + Uri.EscapeDataString(baseUrl);
-            signBase += "&" + Uri.EscapeDataString(paramString);
-
-            string signKey = Uri.EscapeDataString(ConsumerSecret) + "&";
-            signKey += Uri.EscapeDataString(TokenSecret);
-
-            HMACSHA1 hmac = new HMACSHA1(Encoding.UTF8.GetBytes(signKey));
-            string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signBase)));
-            headerParams.Add("oauth_signature", signature);
-            string headerString = "OAuth "
-                + string.Join(", ", (from k in headerParams.AllKeys orderby k ascending
-                                     from v in headerParams.GetValues(k)
-                                     select $"{Uri.EscapeDataString(k)}=\"{Uri.EscapeDataString(v)}\""));
+            string headerString = GenerateAuthHeader(method, baseUrl, query, data);
 
             HttpRequestMessage request = new HttpRequestMessage(method, requestUrl);
             request.Headers.Add("Authorization", headerString);
@@ -155,5 +129,98 @@ namespace PicoBird
 
         private static string GenerateTimestamp()
             => ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds)).ToString();
+
+        private string GenerateAuthHeader(
+            HttpMethod method,
+            string baseUrl,
+            NameValueCollection query = null,
+            NameValueCollection data = null)
+        {
+            NameValueCollection parameters = new NameValueCollection
+            {
+                { "oauth_consumer_key", ConsumerKey },
+                { "oauth_nonce", GenerateNonce() },
+                { "oauth_signature_method", "HMAC-SHA1" },
+                { "oauth_timestamp", GenerateTimestamp() },
+                { "oauth_version", "1.0" },
+            };
+            if (!Token.Equals(""))
+                parameters.Add("oauth_token", Token);
+            else if (baseUrl.Contains("request_token"))
+                parameters.Add("oauth_callback", OAuthCallback);
+
+            NameValueCollection headerParams = new NameValueCollection(parameters);
+            if (query != null) parameters.Add(query);
+            if (method == HttpMethod.Post && data != null) parameters.Add(data);
+            string paramString = PercentEncode(parameters);
+
+            string signBase = method.ToString();
+            signBase += "&" + Uri.EscapeDataString(baseUrl);
+            signBase += "&" + Uri.EscapeDataString(paramString);
+
+            string signKey = Uri.EscapeDataString(ConsumerSecret) + "&";
+            signKey += Uri.EscapeDataString(TokenSecret);
+
+            HMACSHA1 hmac = new HMACSHA1(Encoding.UTF8.GetBytes(signKey));
+            string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signBase)));
+            headerParams.Add("oauth_signature", signature);
+            string headerString = "OAuth "
+                + string.Join(", ", (from k in headerParams.AllKeys
+                                     orderby k ascending
+                                     from v in headerParams.GetValues(k)
+                                     select $"{Uri.EscapeDataString(k)}=\"{Uri.EscapeDataString(v)}\""));
+
+            return headerString;
+        }
+
+        public class _Streaming
+        {
+            private API api;
+            public _Streaming(API api) { this.api = api; }
+
+            public void UserStream(Action<Tweet> callback, NameValueCollection query = null)
+                => StreamTest("https://userstream.twitter.com/1.1/user.json", callback, query);
+
+            private void StreamTest(
+                string resource,
+                Action<Tweet> callback,
+                NameValueCollection query = null)
+            {
+                string baseUrl = resource;    // api url without query string
+                string requestUrl = baseUrl;    // api url with query string (if any)
+                string queryString = query != null ? PercentEncode(query) : "";
+                if (!queryString.Equals("")) requestUrl += "?" + queryString;
+
+                string headerString = api.GenerateAuthHeader(HttpMethod.Get, baseUrl, query);
+
+                WebRequest webReq = WebRequest.Create(requestUrl);
+                webReq.Headers.Add("Authorization", headerString);
+                webReq.BeginGetResponse(ar =>
+                {
+                    var req = (WebRequest)ar.AsyncState;
+                    using (var response = req.EndGetResponse(ar))
+                    using (var reader = new StreamReader(response.GetResponseStream()))
+                    {
+                        while (!reader.EndOfStream)
+                        {
+                            string line = reader.ReadLine();
+                            if (line.Trim().Equals("")) continue;
+
+                            int size = int.Parse(line);
+
+                            line = reader.ReadLine();
+                            try
+                            {
+                                Tweet status = JsonConvert.DeserializeObject<Tweet>(line);
+                                if (status.id == null) continue;
+                                callback(status);
+                            }
+                            catch (Exception) { }
+                        }
+                    }
+                }, webReq);
+            }
+        }
+        /* End of `_Streaming' nested class */
     }
 }
