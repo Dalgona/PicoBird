@@ -74,6 +74,7 @@
       // uid: id_str of the user who deleted the tweet
     }
   );
+  ```
 
 ## Todo
 
