@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Net;
 using PicoBird.Objects;
+using Newtonsoft.Json.Linq;
 
 namespace PicoBird
 {
@@ -176,14 +177,16 @@ namespace PicoBird
         public class _Streaming
         {
             private API api;
+
             public _Streaming(API api) { this.api = api; }
 
-            public void UserStream(Action<Tweet> callback, NameValueCollection query = null)
-                => StreamTest("https://userstream.twitter.com/1.1/user.json", callback, query);
+            public void UserStream(Action<Tweet> OnTweet, Action<string, string> OnDelete)
+                => Stream("https://userstream.twitter.com/1.1/user.json", OnTweet, OnDelete, new NameValueCollection { { "delimited", "length" } });
 
-            private void StreamTest(
+            private void Stream(
                 string resource,
-                Action<Tweet> callback,
+                Action<Tweet> OnTweet = null,
+                Action<string, string> OnDelete = null,
                 NameValueCollection query = null)
             {
                 string baseUrl = resource;    // api url without query string
@@ -204,22 +207,36 @@ namespace PicoBird
                         while (!reader.EndOfStream)
                         {
                             string line = reader.ReadLine();
+
+                            // On blank lines
                             if (line.Trim().Equals("")) continue;
 
                             int size = int.Parse(line);
-
                             line = reader.ReadLine();
-                            try
+                            if (line.IndexOf("\"delete\":") != -1)
                             {
-                                Tweet status = JsonConvert.DeserializeObject<Tweet>(line);
-                                if (status.id == null) continue;
-                                callback(status);
+                                dynamic delObj = JObject.Parse(line);
+                                string id = delObj.delete.status.id_str;
+                                string uid = delObj.delete.status.user_id_str;
+                                OnDelete?.Invoke(id, uid);
                             }
-                            catch (Exception) { }
+                            /* TODO: implement handlers for variety of events */
+                            else
+                            {
+                                try
+                                {
+                                    Tweet status = JsonConvert.DeserializeObject<Tweet>(line);
+                                    if (status.id == null) continue;
+                                    OnTweet?.Invoke(status);
+                                }
+                                catch (Exception)
+                                { }
+                            }
                         }
                     }
                 }, webReq);
             }
+
         }
         /* End of `_Streaming' nested class */
     }

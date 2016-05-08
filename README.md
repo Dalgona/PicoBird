@@ -61,19 +61,22 @@ Simple Twitter library for .NET
   *WARNING: PicoBird's streaming support is experimental and it does not provide all the functionality listed in the official specification. And the behaviors are subject to change at any time. Use with caution.*
 
   ```cs
-  api.Streaming.UserStream(status =>
-  {
-      // `status` is a `PicoBird.Objects.Tweet` object.
-      Console.WriteLine(status.text);
-      
-      // For right now, do not delete the parameter below,
-      // or streaming won't work.
-  }, new NameValueCollection { { "delimited", "length" } });
-  ```
+  api.Streaming.UserStream(
+    status =>
+    {
+      // On new tweets
+    },
+    (id, uid) =>
+    {
+      // When someone deleted a tweet
+      // id: id_str of deleted tweet
+      // uid: id_str of the user who deleted the tweet
+    }
+  );
 
 ## Todo
 
-* Add basic wrappers
+* finding out what to do next
 
 ## License
 
