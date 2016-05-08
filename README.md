@@ -1,5 +1,6 @@
-# PicoBird
-Simple Twitter library for .NET
+<img src="http://include.iostream.kr/res/picobird.png" width="300px"><br>
+
+> PicoBird&mdash;Yet another simple Twitter library for .NET
 
 ## Usage
 
