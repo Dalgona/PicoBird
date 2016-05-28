@@ -76,7 +76,11 @@ namespace PicoBird
             string resource,
             NameValueCollection query = null)
             => JsonConvert.DeserializeObject<T>(
-                await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync());
+                await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync(),
+                new JsonSerializerSettings
+                {
+                    DateFormatString = "ddd MMM dd HH:mm:ss +0000 yyyy"
+                });
 
         public async Task<HttpResponseMessage> Post(
             string resource,
@@ -89,7 +93,11 @@ namespace PicoBird
             NameValueCollection query = null,
             NameValueCollection data = null)
             => JsonConvert.DeserializeObject<T>(
-                await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync());
+                await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync(),
+                new JsonSerializerSettings
+                {
+                    DateFormatString = "ddd MMM dd HH:mm:ss +0000 yyyy"
+                });
 
         public async Task RequestToken(Func<string, string> callback)
         {

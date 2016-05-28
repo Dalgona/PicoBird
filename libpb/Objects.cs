@@ -1,11 +1,13 @@
-﻿namespace PicoBird.Objects
+﻿using System;
+
+namespace PicoBird.Objects
 {
     public interface ITwitterObject { }
 
     public class User : ITwitterObject
     {
         public bool? contributors_enabled { get; set; }
-        public string created_at { get; set; }
+        public DateTime created_at { get; set; }
         public bool? default_profile { get; set; }
         public bool? default_profile_image { get; set; }
         public string description { get; set; }
@@ -54,7 +56,7 @@
         public object annotations { get; set; }
         public object contributors { get; set; }
         public object coordinates { get; set; }
-        public string created_at { get; set; }
+        public DateTime created_at { get; set; }
         public object current_user_retweet { get; set; }
         public Entity entities { get; set; }
         public int? favorite_count { get; set; }
@@ -158,5 +160,14 @@
         }
 
         public Error[] errors { get; set; }
+    }
+
+    public class CursoredIdStrings : ITwitterObject
+    {
+        public long previous_cursor { get; set; }
+        public long next_cursor { get; set; }
+        public string previous_cursor_str { get; set; }
+        public string next_cursor_str { get; set; }
+        public string[] ids { get; set; }
     }
 }
