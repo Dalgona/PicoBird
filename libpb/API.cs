@@ -24,8 +24,8 @@ namespace PicoBird
         };
 
         private HttpClient client;
-        public string ConsumerKey { get; private set; }
-        public string ConsumerSecret { get; private set; }
+        public string ConsumerKey { get; set; }
+        public string ConsumerSecret { get; set; }
         public string Token { get; set; }
         public string TokenSecret { get; set; }
         public string OAuthCallback { get; set; }
