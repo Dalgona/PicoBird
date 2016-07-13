@@ -1,23 +1,27 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using PicoBird.Objects;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-using System.IO;
-using System.Net;
-using PicoBird.Objects;
-using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace PicoBird
 {
     public class API
     {
         private static readonly string APIROOT = "https://api.twitter.com";
+        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        {
+            DateFormatString = "ddd MMM dd HH:mm:ss +0000 yyyy"
+        };
 
         private HttpClient client;
         public string ConsumerKey { get; private set; }
@@ -76,11 +80,7 @@ namespace PicoBird
             string resource,
             NameValueCollection query = null)
             => JsonConvert.DeserializeObject<T>(
-                await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync(),
-                new JsonSerializerSettings
-                {
-                    DateFormatString = "ddd MMM dd HH:mm:ss +0000 yyyy"
-                });
+                await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync(), JsonSettings);
 
         public async Task<HttpResponseMessage> Post(
             string resource,
@@ -93,11 +93,7 @@ namespace PicoBird
             NameValueCollection query = null,
             NameValueCollection data = null)
             => JsonConvert.DeserializeObject<T>(
-                await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync(),
-                new JsonSerializerSettings
-                {
-                    DateFormatString = "ddd MMM dd HH:mm:ss +0000 yyyy"
-                });
+                await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync(), JsonSettings);
 
         public async Task RequestToken(Func<string, string> callback)
         {
@@ -119,6 +115,8 @@ namespace PicoBird
             Token = dict["oauth_token"];
             TokenSecret = dict["oauth_token_secret"];
         }
+
+        #region OAuth Helper Functions
 
         private static string PercentEncode(NameValueCollection nvc)
         {
@@ -182,6 +180,8 @@ namespace PicoBird
             return headerString;
         }
 
+        #endregion
+
         public class _Streaming
         {
             private API api;
@@ -211,7 +211,6 @@ namespace PicoBird
                     var req = (WebRequest)ar.AsyncState;
                     using (var response = req.EndGetResponse(ar))
                     using (var reader = new StreamReader(response.GetResponseStream()))
-                    {
                         while (!reader.EndOfStream)
                         {
                             string line = reader.ReadLine();
@@ -233,7 +232,7 @@ namespace PicoBird
                             {
                                 try
                                 {
-                                    Tweet status = JsonConvert.DeserializeObject<Tweet>(line);
+                                    Tweet status = JsonConvert.DeserializeObject<Tweet>(line, JsonSettings);
                                     if (status.id == null) continue;
                                     OnTweet?.Invoke(status);
                                 }
@@ -241,7 +240,7 @@ namespace PicoBird
                                 { }
                             }
                         }
-                    }
+                    
                 }, webReq);
             }
 
