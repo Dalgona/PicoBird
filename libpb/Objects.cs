@@ -89,6 +89,38 @@ namespace PicoBird.Objects
         public string withheld_scope { get; set; }
     }
 
+    public class DirectMessage : ITwitterObject
+    {
+        public DateTime created_at { get; set; }
+        public Entity entities { get; set; }
+        public long? id { get; set; }
+        public string id_str { get; set; }
+        public User recipient { get; set; }
+        public long? recipient_id { get; set; }
+        public string recipient_screen_name { get; set; }
+        public User sender { get; set; }
+        public long? sender_id { get; set; }
+        public string sender_screen_name { get; set; }
+        public string text { get; set; }
+    }
+
+    public class List : ITwitterObject
+    {
+        public long? id { get; set; }
+        public string id_str { get; set; }
+        public string name { get; set; }
+        public string uri { get; set; }
+        public long? subscriber_count { get; set; }
+        public long? member_count { get; set; }
+        public string mode { get; set; }
+        public string description { get; set; }
+        public string slug { get; set; }
+        public string full_name { get; set; }
+        public DateTime created_at { get; set; }
+        public bool? following { get; set; }
+        public User user { get; set; }
+    }
+
     public class Entity : ITwitterObject
     {
         public class Hashtag
@@ -162,12 +194,21 @@ namespace PicoBird.Objects
         public Error[] errors { get; set; }
     }
 
-    public class CursoredIdStrings : ITwitterObject
+    public abstract class CursoredObjects : ITwitterObject
     {
         public long previous_cursor { get; set; }
         public long next_cursor { get; set; }
         public string previous_cursor_str { get; set; }
         public string next_cursor_str { get; set; }
+    }
+
+    public class CursoredIdStrings : CursoredObjects
+    {
         public string[] ids { get; set; }
+    }
+
+    public class CursoredLists : CursoredObjects
+    {
+        public List[] lists { get; set; }
     }
 }
