@@ -116,6 +116,29 @@ namespace PicoBird
             TokenSecret = dict["oauth_token_secret"];
         }
 
+        public async Task<string> GetAuthenticateUrl()
+        {
+            var res = await Post("/oauth/request_token");
+            var tokens = from i in (await res.Content.ReadAsStringAsync()).Split('&')
+                         select i.Split('=');
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            foreach (var i in tokens) dict.Add(i[0], i[1]);
+            Token = dict["oauth_token"];
+            TokenSecret = dict["oauth_token_secret"];
+            return APIROOT + $"/oauth/authenticate?oauth_token={Token}";
+        }
+
+        public async Task GetTokenFromPin(string pin)
+        {
+            var res = await Post("/oauth/access_token", null, new NameValueCollection { { "oauth_verifier", pin } });
+            var tokens = from i in (await res.Content.ReadAsStringAsync()).Split('&')
+                         select i.Split('=');
+            var dict = new Dictionary<string, string>();
+            foreach (var i in tokens) dict.Add(i[0], i[1]);
+            Token = dict["oauth_token"];
+            TokenSecret = dict["oauth_token_secret"];
+        }
+
         #region OAuth Helper Functions
 
         private static string PercentEncode(NameValueCollection nvc)
