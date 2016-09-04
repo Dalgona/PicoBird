@@ -29,12 +29,18 @@ namespace PicoBird
         public string Token { get; set; }
         public string TokenSecret { get; set; }
         public string OAuthCallback { get; set; }
+        public int HttpTimeout
+        {
+            get { return (int)client.Timeout.TotalSeconds; }
+            set { client.Timeout = TimeSpan.FromSeconds(value); }
+        }
         public _Streaming Streaming { get; private set; }
 
         // Constructor
         public API(string consumerKey, string consumerSecret)
         {
             client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
             ConsumerKey = consumerKey;
             ConsumerSecret = consumerSecret;
             Token = "";
