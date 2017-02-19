@@ -32,7 +32,11 @@ namespace PicoBird
         public int HttpTimeout
         {
             get { return (int)client.Timeout.TotalSeconds; }
-            set { client.Timeout = TimeSpan.FromSeconds(value); }
+            set
+            {
+                client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(value);
+            }
         }
         public _Streaming Streaming { get; private set; }
 
