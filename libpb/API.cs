@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using PicoBird.Objects;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -31,19 +27,14 @@ namespace PicoBird
         public string OAuthCallback { get; set; }
         public int HttpTimeout
         {
-            get { return (int)client.Timeout.TotalSeconds; }
-            set
-            {
-                client = new HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(value);
-            }
+            get => (int)client.Timeout.TotalSeconds;
+            set => client = new HttpClient { Timeout = TimeSpan.FromSeconds(value) };
         }
 
         // Constructor
         public API(string consumerKey, string consumerSecret)
         {
-            client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             ConsumerKey = consumerKey;
             ConsumerSecret = consumerSecret;
             Token = "";
@@ -86,7 +77,7 @@ namespace PicoBird
 
         public async Task<T> Get<T>(
             string resource,
-            NameValueCollection query = null)
+            NameValueCollection query = null) where T: Objects.ITwitterObject
             => JsonConvert.DeserializeObject<T>(
                 await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync(), JsonSettings);
 
@@ -99,7 +90,7 @@ namespace PicoBird
         public async Task<T> Post<T>(
             string resource,
             NameValueCollection query = null,
-            NameValueCollection data = null)
+            NameValueCollection data = null) where T : Objects.ITwitterObject
             => JsonConvert.DeserializeObject<T>(
                 await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync(), JsonSettings);
 
@@ -192,12 +183,8 @@ namespace PicoBird
             if (method == HttpMethod.Post && data != null) parameters.Add(data);
             string paramString = PercentEncode(parameters);
 
-            string signBase = method.ToString();
-            signBase += "&" + Uri.EscapeDataString(baseUrl);
-            signBase += "&" + Uri.EscapeDataString(paramString);
-
-            string signKey = Uri.EscapeDataString(ConsumerSecret) + "&";
-            signKey += Uri.EscapeDataString(TokenSecret);
+            string signBase = method.ToString() + "&" + Uri.EscapeDataString(baseUrl) + "&" + Uri.EscapeDataString(paramString);
+            string signKey = Uri.EscapeDataString(ConsumerSecret) + "&" + Uri.EscapeDataString(TokenSecret);
 
             HMACSHA1 hmac = new HMACSHA1(Encoding.UTF8.GetBytes(signKey));
             string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signBase)));
