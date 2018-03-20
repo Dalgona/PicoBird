@@ -38,7 +38,6 @@ namespace PicoBird
                 client.Timeout = TimeSpan.FromSeconds(value);
             }
         }
-        public _Streaming Streaming { get; private set; }
 
         // Constructor
         public API(string consumerKey, string consumerSecret)
@@ -50,7 +49,6 @@ namespace PicoBird
             Token = "";
             TokenSecret = "";
             OAuthCallback = "";
-            Streaming = new _Streaming(this);
         }
 
         // Send OAuth signed requests.
@@ -214,70 +212,5 @@ namespace PicoBird
         }
 
         #endregion
-
-        public class _Streaming
-        {
-            private API api;
-
-            public _Streaming(API api) { this.api = api; }
-
-            public void UserStream(Action<Tweet> OnTweet, Action<string, string> OnDelete)
-                => Stream("https://userstream.twitter.com/1.1/user.json", OnTweet, OnDelete, new NameValueCollection { { "delimited", "length" } });
-
-            private void Stream(
-                string resource,
-                Action<Tweet> OnTweet = null,
-                Action<string, string> OnDelete = null,
-                NameValueCollection query = null)
-            {
-                string baseUrl = resource;    // api url without query string
-                string requestUrl = baseUrl;    // api url with query string (if any)
-                string queryString = query != null ? PercentEncode(query) : "";
-                if (!queryString.Equals("")) requestUrl += "?" + queryString;
-
-                string headerString = api.GenerateAuthHeader(HttpMethod.Get, baseUrl, query);
-
-                WebRequest webReq = WebRequest.Create(requestUrl);
-                webReq.Headers.Add("Authorization", headerString);
-                webReq.BeginGetResponse(ar =>
-                {
-                    var req = (WebRequest)ar.AsyncState;
-                    using (var response = req.EndGetResponse(ar))
-                    using (var reader = new StreamReader(response.GetResponseStream()))
-                        while (!reader.EndOfStream)
-                        {
-                            string line = reader.ReadLine();
-
-                            // On blank lines
-                            if (line.Trim().Equals("")) continue;
-
-                            int size = int.Parse(line);
-                            line = reader.ReadLine();
-                            if (line.IndexOf("\"delete\":") != -1)
-                            {
-                                dynamic delObj = JObject.Parse(line);
-                                string id = delObj.delete.status.id_str;
-                                string uid = delObj.delete.status.user_id_str;
-                                OnDelete?.Invoke(id, uid);
-                            }
-                            /* TODO: implement handlers for variety of events */
-                            else
-                            {
-                                try
-                                {
-                                    Tweet status = JsonConvert.DeserializeObject<Tweet>(line, JsonSettings);
-                                    if (status.id == null) continue;
-                                    OnTweet?.Invoke(status);
-                                }
-                                catch (Exception)
-                                { }
-                            }
-                        }
-                    
-                }, webReq);
-            }
-
-        }
-        /* End of `_Streaming' nested class */
     }
 }
