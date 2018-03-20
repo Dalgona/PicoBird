@@ -77,7 +77,7 @@ namespace PicoBird
 
         public async Task<T> Get<T>(
             string resource,
-            NameValueCollection query = null) where T: Objects.ITwitterObject
+            NameValueCollection query = null)
             => JsonConvert.DeserializeObject<T>(
                 await (await SendRequest(HttpMethod.Get, resource, query)).Content.ReadAsStringAsync(), JsonSettings);
 
@@ -90,7 +90,7 @@ namespace PicoBird
         public async Task<T> Post<T>(
             string resource,
             NameValueCollection query = null,
-            NameValueCollection data = null) where T : Objects.ITwitterObject
+            NameValueCollection data = null)
             => JsonConvert.DeserializeObject<T>(
                 await (await SendRequest(HttpMethod.Post, resource, query, data)).Content.ReadAsStringAsync(), JsonSettings);
 
